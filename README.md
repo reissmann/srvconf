@@ -1,4 +1,6 @@
-== About ==
+About
+=====
+
 This repository contains a collection of configuration for GNU/Linux
 operating systems. Most of the files are default templates used in a
 modified form on all of my servers. Feel free to adapt the settings
@@ -7,7 +9,9 @@ to your configuration.
 Feedback and pull-requests are very welcome.
 
 
-== License ==
+License
+=======
+
 Copyright (c) 2015, Sven Reissmann <sven@0x80.io>
 
 Permission to use, copy, modify, and/or distribute this software for any
