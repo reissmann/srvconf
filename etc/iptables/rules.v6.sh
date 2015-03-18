@@ -46,8 +46,8 @@ $IP6TABLES -t mangle -X
 
 # Standard behavior - drop everything
 #
-$IP6TABLES -P INPUT   DROP
-$IP6TABLES -P OUTPUT  DROP
+$IP6TABLES -P INPUT   ACCEPT
+$IP6TABLES -P OUTPUT  ACCEPT
 $IP6TABLES -P FORWARD DROP
 
 # Filter all packets that have deprecated RH0 headers
@@ -57,6 +57,7 @@ $IP6TABLES -A OUTPUT  -m rt --rt-type 0 -j DROP
 $IP6TABLES -A FORWARD -m rt --rt-type 0 -j DROP
 
 # Filter packets using extension headers
+# (ToDo: needs verification!)
 #
 $IP6TABLES -N BlockExtHeaders
 $IP6TABLES -A BlockExtHeaders -m ipv6header --header dst   --soft -j DROP
@@ -71,6 +72,7 @@ $IP6TABLES -A BlockExtHeaders -j RETURN
 # Allow dedicated ICMPv6 types
 #
 $IP6TABLES -N AllowICMPv6IN
+$IP6TABLES -A AllowICMPv6IN -p icmpv6 -m limit --limit 5/s --limit-burst 5 -j ACCEPT				# Limit ICMP rate (5/s + burst)
 $IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 1 -m state --state ESTABLISHED,RELATED -j ACCEPT		# Destination unreachable
 $IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 2 -j ACCEPT							# Packet too big
 $IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 3 -m state --state ESTABLISHED,RELATED -j ACCEPT		# Time exceeded
@@ -83,12 +85,13 @@ $IP6TABLES -A AllowICMPv6IN -p icmpv6 -j DROP									# Drop anything else
 
 # Security
 #
-$IP6TABLES -N other_packets 								# Table "other_packets"
-$IP6TABLES -A other_packets -p ALL -m state --state INVALID -j DROP			# Drop invalid packets
-$IP6TABLES -A other_packets -p ALL -d ff02::1 -j DROP					# Drop all-nodes multicast traffic
-$IP6TABLES -A other_packets -p icmpv6 -m limit --limit 2/s --limit-burst 5 -j ACCEPT	# Limit ICMP rate (2/s + burst)
-$IP6TABLES -A other_packets -p ALL -j RETURN
+$IP6TABLES -N DropOtherPackets 								# Table DropOtherPackets
+$IP6TABLES -A DropOtherPackets -p ALL -m state --state INVALID -j DROP			# Drop invalid packets
+$IP6TABLES -A DropOtherPackets -p ALL -d ff02::1 -j DROP				# Drop all-nodes multicast traffic
+$IP6TABLES -A DropOtherPackets -p ALL -j RETURN
 
+# Additional checks for open ports
+#
 $IP6TABLES -N service_sec								# Table "services_sec"
 $IP6TABLES -A service_sec -p tcp --syn -m limit --limit 5/s -j ACCEPT			# Protect against SYN_FLOOD
 $IP6TABLES -A service_sec -p tcp ! --syn -m state --state NEW -j DROP			# Drop SYN packets that do not have state NEW
@@ -96,8 +99,7 @@ $IP6TABLES -A service_sec -p tcp --tcp-flags ALL NONE -m limit --limit 1/h -j AC
 $IP6TABLES -A service_sec -p tcp --tcp-flags ALL ALL -m limit --limit 1/h -j ACCEPT	# Disallow portscans
 $IP6TABLES -A service_sec -p ALL -j RETURN
 
-
-# Allowed services
+# Open ports
 #
 $IP6TABLES -N services									# Table "services"
 for port in $GLOBAL_SERVICES_TCP ; do							# For each globally allowed TCP port:
@@ -122,19 +124,19 @@ $IP6TABLES -A services -p ALL -j RETURN
 # INPUT
 #
 $IP6TABLES -A INPUT -p ALL -i lo -j ACCEPT						# Allow packets from lo interface
+#$IP6TABLES -A INPUT -s fe80::/10 -j ACCEPT 						# Allow Link-Local addresses
+#$IP6TABLES -A INPUT -d ff00::/8 -j ACCEPT 						# Allow multicast
 $IP6TABLES -A INPUT -p ALL -j BlockExtHeaders						# Block packets with extension headers
-$IP6TABLES -A INPUT -p ALL -j other_packets						# Check table "other_packets" (i.e., rate limiting)
+$IP6TABLES -A INPUT -p ALL -j DropOtherPackets						# Check table DropOtherPackets
 $IP6TABLES -A INPUT -p icmpv6 -j AllowICMPv6IN						# Allow specific ICMPv6 types
 $IP6TABLES -A INPUT -p ALL -m state --state ESTABLISHED,RELATED -j ACCEPT		# Allow existing connections back in
 $IP6TABLES -A INPUT -p ALL -j services							# Allow specific services in
-#$IP6TABLES -A INPUT -i $LAN_IF  -j ACCEPT 						# Allow the localnet access us
-#$IP6TABLES -A INPUT -s fe80::/10 -j ACCEPT 						# Allow Link-Local addresses
-#$IP6TABLES -A INPUT -d ff00::/8 -j ACCEPT 						# Allow multicast
 $IP6TABLES -A INPUT -p ALL -j DROP							# Drop everything else
 
 # OUTPUT
 #
 $IP6TABLES -A OUTPUT -p ALL -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT		# Allow any output
+$IP6TABLES -A OUTPUT -p ALL -j DROP							# Drop everything else
 
 # Save rules
 #
