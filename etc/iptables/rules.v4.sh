@@ -22,18 +22,8 @@
 IPTABLES='/sbin/iptables'
 SAVE_CMD='/etc/init.d/iptables save'
 
-# Open the following ports globally
-# (space separated list of port numbers)
-#
-GLOBAL_SERVICES_UDP=""
-GLOBAL_SERVICES_TCP=""
-
-# Open the following ports for specific peers
-# (space separated list in the form: SourceIP/SourceMask!DstPort)
-#
-SPECIFIC_SERVICES_UDP=""
-SPECIFIC_SERVICES_TCP=""
-
+# Read accepted input
+. ./config.v4
 
 
 
@@ -65,11 +55,11 @@ $IPTABLES -A AllowICMP -p icmp -j DROP								# Drop anything else
 
 # Filter "other" packets (i.e., multicast)
 #
-$IPTABLES -N DropOtherPackets								# Table DropOtherPackets
-$IPTABLES -A DropOtherPackets -p ALL -m state --state INVALID -j DROP			# Ignore invalid packets
-$IPTABLES -A DropOtherPackets -m pkttype --pkt-type broadcast -j DROP			# Ignore broadcasts
-$IPTABLES -A DropOtherPackets -m pkttype --pkt-type multicast -j DROP			# Ignore multicast
-$IPTABLES -A DropOtherPackets -p ALL -j RETURN
+$IPTABLES -N DropOther									# Table DropOther
+$IPTABLES -A DropOther -p ALL -m state --state INVALID -j DROP				# Ignore invalid packets
+$IPTABLES -A DropOther -m pkttype --pkt-type broadcast -j DROP				# Ignore broadcasts
+$IPTABLES -A DropOther -m pkttype --pkt-type multicast -j DROP				# Ignore multicast
+$IPTABLES -A DropOther -p ALL -j RETURN
 
 # Additional checks for open ports
 #
@@ -79,6 +69,14 @@ $IPTABLES -A service_sec -p tcp ! --syn -m state --state NEW -j DROP			# Drop SY
 $IPTABLES -A service_sec -p tcp --tcp-flags ALL NONE -m limit --limit 1/h -j ACCEPT	# Disallow portscans
 $IPTABLES -A service_sec -p tcp --tcp-flags ALL ALL -m limit --limit 1/h -j ACCEPT	# Disallow portscans
 $IPTABLES -A service_sec -p ALL -j RETURN
+
+# Trusted sources
+#
+$IPTABLES -N trusted
+for src in $TRUSTED_SOURCES ; do							# For each trusted source
+	$IPTABLES -A trusted -p ALL -s $src -j ACCEPT					#   Accept any connection
+done
+$IPTABLES -A trusted -p ALL -j RETURN
 
 # Open ports
 #
@@ -105,7 +103,8 @@ $IPTABLES -A services -p ALL -j RETURN
 # INPUT
 #
 $IPTABLES -A INPUT -p ALL -i lo -j ACCEPT						# Allow packets from lo interface
-$IPTABLES -A INPUT -p ALL -j DropOtherPackets						# Check table DropOtherPackets
+$IPTABLES -A INPUT -p ALL -j trusted							# Allow trusted sources
+$IPTABLES -A INPUT -p ALL -j DropOther							# Check table DropOther
 $IPTABLES -A INPUT -p icmp -j AllowICMP							# Allow specific ICMPv6 types
 $IPTABLES -A INPUT -p ALL -m state --state ESTABLISHED,RELATED -j ACCEPT		# Allow existing connections back in
 $IPTABLES -A INPUT -p ALL -j services							# Allow specific services in

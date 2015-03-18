@@ -22,18 +22,8 @@
 IP6TABLES='/sbin/ip6tables'
 SAVE_CMD='/etc/init.d/iptables save'
 
-# Open the following ports globally (any source)
-# (space separated list of port numbers)
-#
-GLOBAL_SERVICES_UDP=""
-GLOBAL_SERVICES_TCP=""
-
-# Open the following ports for specific peers
-# (space separated list in the form: SourceIP/SourceMask!DstPort)
-#
-SPECIFIC_SERVICES_UDP=""
-SPECIFIC_SERVICES_TCP=""
-
+# Read accepted input
+. ./config.v6
 
 
 
@@ -85,10 +75,10 @@ $IP6TABLES -A AllowICMPv6IN -p icmpv6 -j DROP									# Drop anything else
 
 # Security
 #
-$IP6TABLES -N DropOtherPackets 								# Table DropOtherPackets
-$IP6TABLES -A DropOtherPackets -p ALL -m state --state INVALID -j DROP			# Drop invalid packets
-$IP6TABLES -A DropOtherPackets -p ALL -d ff02::1 -j DROP				# Drop all-nodes multicast traffic
-$IP6TABLES -A DropOtherPackets -p ALL -j RETURN
+$IP6TABLES -N DropOther 								# Table DropOther
+$IP6TABLES -A DropOther -p ALL -m state --state INVALID -j DROP				# Drop invalid packets
+$IP6TABLES -A DropOther -p ALL -d ff02::1 -j DROP					# Drop all-nodes multicast traffic
+$IP6TABLES -A DropOther -p ALL -j RETURN
 
 # Additional checks for open ports
 #
@@ -98,6 +88,14 @@ $IP6TABLES -A service_sec -p tcp ! --syn -m state --state NEW -j DROP			# Drop S
 $IP6TABLES -A service_sec -p tcp --tcp-flags ALL NONE -m limit --limit 1/h -j ACCEPT	# Disallow portscans
 $IP6TABLES -A service_sec -p tcp --tcp-flags ALL ALL -m limit --limit 1/h -j ACCEPT	# Disallow portscans
 $IP6TABLES -A service_sec -p ALL -j RETURN
+
+# Trusted sources
+#
+$IP6TABLES -N trusted
+for src in $TRUSTED_SOURCES ; do							# For each trusted source
+	$IP6TABLES -A trusted -p ALL -s $src -j ACCEPT					#   Accept any connection
+done
+$IP6TABLES -A trusted -p ALL -j RETURN
 
 # Open ports
 #
@@ -126,8 +124,9 @@ $IP6TABLES -A services -p ALL -j RETURN
 $IP6TABLES -A INPUT -p ALL -i lo -j ACCEPT						# Allow packets from lo interface
 #$IP6TABLES -A INPUT -s fe80::/10 -j ACCEPT 						# Allow Link-Local addresses
 #$IP6TABLES -A INPUT -d ff00::/8 -j ACCEPT 						# Allow multicast
+$IP6TABLES -A INPUT -p ALL -j trusted							# Allow trusted sources
 $IP6TABLES -A INPUT -p ALL -j BlockExtHeaders						# Block packets with extension headers
-$IP6TABLES -A INPUT -p ALL -j DropOtherPackets						# Check table DropOtherPackets
+$IP6TABLES -A INPUT -p ALL -j DropOther							# Check table DropOther
 $IP6TABLES -A INPUT -p icmpv6 -j AllowICMPv6IN						# Allow specific ICMPv6 types
 $IP6TABLES -A INPUT -p ALL -m state --state ESTABLISHED,RELATED -j ACCEPT		# Allow existing connections back in
 $IP6TABLES -A INPUT -p ALL -j services							# Allow specific services in
