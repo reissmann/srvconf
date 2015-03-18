@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # An IPv4 firewall for non-forwarding hosts
 #
@@ -20,6 +20,7 @@
 # Definitions
 #
 IPTABLES='/sbin/iptables'
+SAVE_CMD='/etc/init.d/iptables save'
 
 # Open the following ports globally
 # (space separated list of port numbers)
@@ -100,7 +101,8 @@ $IPTABLES -A INPUT -p ALL -j DROP							# Drop everything else
 #
 $IPTABLES -A OUTPUT -p ALL -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT		# Allow any output
 
+
 # Save rules
 #
-/etc/init.d/iptables save
+$SAVE_CMD
 

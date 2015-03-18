@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # An IPv6 firewall for non-forwarding hosts
 #
@@ -20,6 +20,7 @@
 # Definitions
 #
 IP6TABLES='/sbin/ip6tables'
+SAVE_CMD='/etc/init.d/iptables save'
 
 # Open the following ports globally (any source)
 # (space separated list of port numbers)
@@ -137,5 +138,5 @@ $IP6TABLES -A OUTPUT -p ALL -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT		
 
 # Save rules
 #
-/etc/init.d/ip6tables save
+$SAVE_CMD
 
