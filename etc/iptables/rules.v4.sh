@@ -43,22 +43,36 @@ $IPTABLES -F
 $IPTABLES -X
 $IPTABLES -t mangle -F
 $IPTABLES -t mangle -X
-#iptables -t nat -F
-#iptables -t nat -X
 
 # Standard behavior - drop everything
 #
-$IPTABLES -P INPUT   DROP
-$IPTABLES -P OUTPUT  DROP
+$IPTABLES -P INPUT   ACCEPT
+$IPTABLES -P OUTPUT  ACCEPT
 $IPTABLES -P FORWARD DROP
 
-# Security
+# Allow dedicated ICMP types
 #
-$IPTABLES -N other_packets								# Table "other_packets"
-$IPTABLES -A other_packets -p ALL -m state --state INVALID -j DROP			# Drop invalid packets
-$IPTABLES -A other_packets -p icmp -m limit --limit 5/s --limit-burst 10 -j ACCEPT	# Limit ICMP rate (2/s + burst)
-$IPTABLES -A other_packets -p ALL -j RETURN
+$IPTABLES -N AllowICMP
+$IPTABLES -A AllowICMP -p icmp -m limit --limit 5/s --limit-burst 10 -j ACCEPT			# Limit ICMP rate (5/s + burst)
+$IPTABLES -A AllowICMP -p icmp --icmp-type 0 -m state --state RELATED,ESTABLISHED -j ACCEPT	# Echo Reply
+$IPTABLES -A AllowICMP -p icmp --icmp-type 8 -j ACCEPT						# Echo Request (protect against flood)
+$IPTABLES -A AllowICMP -p icmp --icmp-type 3 -m state --state RELATED,ESTABLISHED -j ACCEPT	# Destination unreachable
+$IPTABLES -A AllowICMP -p icmp --icmp-type 5 -m state --state RELATED,ESTABLISHED -j ACCEPT	# Redirect
+$IPTABLES -A AllowICMP -p icmp --icmp-type 11 -m state --state RELATED,ESTABLISHED -j ACCEPT	# Time exceeded
+$IPTABLES -A AllowICMP -p icmp --icmp-type 12 -m state --state RELATED,ESTABLISHED -j ACCEPT	# Parameter problem
+$IPTABLES -A AllowICMP -p icmp --icmp-type 14 -m state --state RELATED,ESTABLISHED -j ACCEPT	# Timestamp Reply
+$IPTABLES -A AllowICMP -p icmp -j DROP								# Drop anything else
 
+# Filter "other" packets (i.e., multicast)
+#
+$IPTABLES -N DropOtherPackets								# Table DropOtherPackets
+$IPTABLES -A DropOtherPackets -p ALL -m state --state INVALID -j DROP			# Ignore invalid packets
+$IPTABLES -A DropOtherPackets -m pkttype --pkt-type broadcast -j DROP			# Ignore broadcasts
+$IPTABLES -A DropOtherPackets -m pkttype --pkt-type multicast -j DROP			# Ignore multicast
+$IPTABLES -A DropOtherPackets -p ALL -j RETURN
+
+# Additional checks for open ports
+#
 $IPTABLES -N service_sec								# Table "services_sec"
 $IPTABLES -A service_sec -p tcp --syn -m limit --limit 5/s -j ACCEPT			# Protect against SYN_FLOOD
 $IPTABLES -A service_sec -p tcp ! --syn -m state --state NEW -j DROP			# Drop SYN packets that do not have state NEW
@@ -66,8 +80,7 @@ $IPTABLES -A service_sec -p tcp --tcp-flags ALL NONE -m limit --limit 1/h -j ACC
 $IPTABLES -A service_sec -p tcp --tcp-flags ALL ALL -m limit --limit 1/h -j ACCEPT	# Disallow portscans
 $IPTABLES -A service_sec -p ALL -j RETURN
 
-
-# Dienste
+# Open ports
 #
 $IPTABLES -N services									# Table "services"
 for port in $GLOBAL_SERVICES_TCP ; do							# For each allowed TCP-port:
@@ -92,7 +105,8 @@ $IPTABLES -A services -p ALL -j RETURN
 # INPUT
 #
 $IPTABLES -A INPUT -p ALL -i lo -j ACCEPT						# Allow packets from lo interface
-$IPTABLES -A INPUT -p ALL -j other_packets						# Check table "other_packets" (i.e., rate limiting)
+$IPTABLES -A INPUT -p ALL -j DropOtherPackets						# Check table DropOtherPackets
+$IPTABLES -A INPUT -p icmp -j AllowICMP							# Allow specific ICMPv6 types
 $IPTABLES -A INPUT -p ALL -m state --state ESTABLISHED,RELATED -j ACCEPT		# Allow existing connections back in
 $IPTABLES -A INPUT -p ALL -j services							# Allow specific services in
 $IPTABLES -A INPUT -p ALL -j DROP							# Drop everything else 
@@ -100,6 +114,7 @@ $IPTABLES -A INPUT -p ALL -j DROP							# Drop everything else
 # OUTPUT
 #
 $IPTABLES -A OUTPUT -p ALL -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT		# Allow any output
+$IPTABLES -A OUTPUT -p ALL -j DROP							# Drop everything else 
 
 
 # Save rules
