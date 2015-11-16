@@ -17,13 +17,8 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-# Definitions
-#
-IPTABLES='/sbin/iptables'
-SAVE_CMD='/etc/init.d/iptables save'
-
-# Read accepted input
-. ./config.v4
+# Read configuration
+source /etc/iptables/config.v4
 
 
 

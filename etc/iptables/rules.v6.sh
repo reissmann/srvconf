@@ -17,13 +17,8 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-# Definitions
-#
-IP6TABLES='/sbin/ip6tables'
-SAVE_CMD='/etc/init.d/iptables save'
-
-# Read accepted input
-. ./config.v6
+# Read configuration
+source /etc/iptables/config.v6
 
 
 

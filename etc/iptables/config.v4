@@ -17,6 +17,24 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
+# The iptables command (usually /sbin/iptables)
+#
+IPTABLES='/sbin/iptables'
+
+
+
+# The command to save the currently loaded iptables rules.
+# On debian this is usually done by issuing the command installing the
+# package iptables-persistant and issuing the command:
+# /etc/init.d/iptables-persistant start
+# On some systems it is done by issuing the command:
+# /etc/init.d/iptables save
+# To disable this, just set it to /bin/true
+#
+SAVE_CMD='/etc/init.d/iptables save'
+
+
+
 # Allow the following networks/hosts to access anything
 # (space separated list in the form: host/netmask)
 # Example: "1.2.3.4/32 9.8.7.0/24"
