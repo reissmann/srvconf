@@ -99,15 +99,14 @@ for port in $GLOBAL_SERVICES_TCP ; do							# For each globally allowed TCP port
 	$IP6TABLES -A services -p tcp --dport $port -j service_sec			#   Check service_sec table for limits
 	$IP6TABLES -A services -p tcp --dport $port -j ACCEPT				#   Accept the connection
 done
-for next in $SPECIFIC_SERVICES_TCP ; do							# For each specificly allowed TCP port:
+for next in $SPECIFIC_SERVICES_TCP ; do							# For each specifically allowed TCP port:
 	IFS='!' read -a arr <<< "$next"							#   Get source IP and port
 	$IP6TABLES -A services -p tcp -s ${arr[0]} --dport ${arr[1]} -j ACCEPT		#   Accept the connection
 done
 for port in $GLOBAL_SERVICES_UDP ; do							# For each globally allowed UDP-port:
-	$IP6TABLES -A services -p udp --dport $port -j service_sec			#   Check service_sec table for limits
 	$IP6TABLES -A services -p udp --dport $port -j ACCEPT				#   Accept the connection
 done
-for next in $SPECIFIC_SERVICES_UDP ; do 						# For each specificly allowed UDP port:
+for next in $SPECIFIC_SERVICES_UDP ; do 						# For each specifically allowed UDP port:
         IFS='!' read -a arr <<< "$next"							#   Get source IP and port
 	$IP6TABLES -A services -p udp -s ${arr[0]} --dport ${arr[1]} -j ACCEPT		#   Accept the connection
 done

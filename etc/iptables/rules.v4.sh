@@ -80,15 +80,14 @@ for port in $GLOBAL_SERVICES_TCP ; do							# For each allowed TCP-port:
        $IPTABLES -A services -p tcp --dport $port -j service_sec			#   Check service_sec table for limits
        $IPTABLES -A services -p tcp --dport $port -j ACCEPT				#   Accept the connection
 done
-for next in $SPECIFIC_SERVICES_TCP ; do							# For each specificly allowed TCP port:
+for next in $SPECIFIC_SERVICES_TCP ; do							# For each specifically allowed TCP port:
         IFS='!' read -a arr <<< "$next"							#   Get source IP and port
         $IPTABLES -A services -p tcp -s ${arr[0]} --dport ${arr[1]} -j ACCEPT		#   Accept the connection
 done 
 for port in $GLOBAL_SERVICES_UDP ; do 							# For each allowed UDP-port:
-       $IPTABLES -A services -p udp --dport $port -j service_sec			#   Check service_sec table for limits
        $IPTABLES -A services -p udp --dport $port -j ACCEPT				#   Accept the connection
 done
-for next in $SPECIFIC_SERVICES_UDP ; do							# For each specificly allowed UDP port:
+for next in $SPECIFIC_SERVICES_UDP ; do							# For each specifically allowed UDP port:
         IFS='!' read -a arr <<< "$next"							#   Get source IP and port
         $IPTABLES -A services -p udp -s ${arr[0]} --dport ${arr[1]} -j ACCEPT		#   Accept the connection
 done
@@ -100,7 +99,7 @@ $IPTABLES -A services -p ALL -j RETURN
 $IPTABLES -A INPUT -p ALL -i lo -j ACCEPT						# Allow packets from lo interface
 $IPTABLES -A INPUT -p ALL -j trusted							# Allow trusted sources
 $IPTABLES -A INPUT -p ALL -j DropOther							# Check table DropOther
-$IPTABLES -A INPUT -p icmp -j AllowICMP							# Allow specific ICMPv6 types
+$IPTABLES -A INPUT -p icmp -j AllowICMP							# Allow specific ICMP types
 $IPTABLES -A INPUT -p ALL -m state --state ESTABLISHED,RELATED -j ACCEPT		# Allow existing connections back in
 $IPTABLES -A INPUT -p ALL -j services							# Allow specific services in
 $IPTABLES -A INPUT -p ALL -j DROP							# Drop everything else 
