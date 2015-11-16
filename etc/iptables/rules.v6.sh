@@ -57,12 +57,12 @@ $IP6TABLES -A BlockExtHeaders -j RETURN
 # Allow dedicated ICMPv6 types
 #
 $IP6TABLES -N AllowICMPv6IN
-$IP6TABLES -A AllowICMPv6IN -p icmpv6 -m limit --limit 5/s --limit-burst 5 -j ACCEPT				# Limit ICMP rate (5/s + burst)
+$IP6TABLES -A AllowICMPv6IN -p icmpv6 -m limit --limit 10/s --limit-burst 20 -j ACCEPT				# Limit ICMP rate (5/s + burst)
 $IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 1 -m state --state ESTABLISHED,RELATED -j ACCEPT		# Destination unreachable
 $IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 2 -j ACCEPT							# Packet too big
 $IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 3 -m state --state ESTABLISHED,RELATED -j ACCEPT		# Time exceeded
 $IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 4 -m state --state ESTABLISHED,RELATED -j ACCEPT		# Parameter problem
-$IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 128 -m limit --limit 2/sec --limit-burst 5 -j ACCEPT	# Echo Request (protect against flood)
+$IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 128 -m limit --limit 5/sec --limit-burst 10 -j ACCEPT	# Echo Request (protect against flood)
 $IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 129 -m state --state ESTABLISHED,RELATED -j ACCEPT		# Echo Reply
 #$IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 135 -j ACCEPT						# Neighbor Solicitation
 #$IP6TABLES -A AllowICMPv6IN -p icmpv6 --icmpv6-type 136 -j ACCEPT						# Neighbor Advertisement
@@ -78,7 +78,7 @@ $IP6TABLES -A DropOther -p ALL -j RETURN
 # Additional checks for open ports
 #
 $IP6TABLES -N service_sec								# Table "services_sec"
-$IP6TABLES -A service_sec -p tcp --syn -m limit --limit 5/s -j ACCEPT			# Protect against SYN_FLOOD
+$IP6TABLES -A service_sec -p tcp --syn -m limit --limit 15/s -j ACCEPT			# Protect against SYN_FLOOD
 $IP6TABLES -A service_sec -p tcp ! --syn -m state --state NEW -j DROP			# Drop SYN packets that do not have state NEW
 $IP6TABLES -A service_sec -p tcp --tcp-flags ALL NONE -m limit --limit 1/h -j ACCEPT	# Disallow portscans
 $IP6TABLES -A service_sec -p tcp --tcp-flags ALL ALL -m limit --limit 1/h -j ACCEPT	# Disallow portscans

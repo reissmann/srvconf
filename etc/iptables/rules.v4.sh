@@ -38,7 +38,7 @@ $IPTABLES -P FORWARD DROP
 # Allow dedicated ICMP types
 #
 $IPTABLES -N AllowICMP
-$IPTABLES -A AllowICMP -p icmp -m limit --limit 5/s --limit-burst 10 -j ACCEPT			# Limit ICMP rate (5/s + burst)
+$IPTABLES -A AllowICMP -p icmp -m limit --limit 10/s --limit-burst 20 -j ACCEPT			# Limit ICMP rate (5/s + burst)
 $IPTABLES -A AllowICMP -p icmp --icmp-type 0 -m state --state RELATED,ESTABLISHED -j ACCEPT	# Echo Reply
 $IPTABLES -A AllowICMP -p icmp --icmp-type 8 -j ACCEPT						# Echo Request (protect against flood)
 $IPTABLES -A AllowICMP -p icmp --icmp-type 3 -m state --state RELATED,ESTABLISHED -j ACCEPT	# Destination unreachable
@@ -59,7 +59,7 @@ $IPTABLES -A DropOther -p ALL -j RETURN
 # Additional checks for open ports
 #
 $IPTABLES -N service_sec								# Table "services_sec"
-$IPTABLES -A service_sec -p tcp --syn -m limit --limit 5/s -j ACCEPT			# Protect against SYN_FLOOD
+$IPTABLES -A service_sec -p tcp --syn -m limit --limit 15/s -j ACCEPT			# Protect against SYN_FLOOD
 $IPTABLES -A service_sec -p tcp ! --syn -m state --state NEW -j DROP			# Drop SYN packets that do not have state NEW
 $IPTABLES -A service_sec -p tcp --tcp-flags ALL NONE -m limit --limit 1/h -j ACCEPT	# Disallow portscans
 $IPTABLES -A service_sec -p tcp --tcp-flags ALL ALL -m limit --limit 1/h -j ACCEPT	# Disallow portscans
