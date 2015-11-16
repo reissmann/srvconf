@@ -26,7 +26,7 @@ IPTABLES='/sbin/iptables'
 # The command to save the currently loaded iptables rules.
 # On debian this is usually done by issuing the command installing the
 # package iptables-persistant and issuing the command:
-# /etc/init.d/iptables-persistant start
+# /etc/init.d/iptables-persistent start
 # On some systems it is done by issuing the command:
 # /etc/init.d/iptables save
 # To disable this, just set it to /bin/true
