@@ -29,6 +29,7 @@ IPTABLES='/sbin/iptables'
 # /etc/init.d/iptables-persistent start
 # On some systems it is done by issuing the command:
 # /etc/init.d/iptables save
+# On Debian 8 use this: dpkg-reconfigure iptables-persistent
 # To disable this, just set it to /bin/true
 #
 SAVE_CMD='/etc/init.d/iptables save'
